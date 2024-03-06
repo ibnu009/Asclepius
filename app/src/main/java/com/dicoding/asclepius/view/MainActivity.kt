@@ -1,60 +1,39 @@
 package com.dicoding.asclepius.view
 
-import android.Manifest
 import android.app.Activity
 import android.content.Intent
-import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.net.Uri
-import androidx.appcompat.app.AppCompatActivity
-import android.os.Bundle
-import android.util.Log
-import android.widget.Toast
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.content.ContextCompat
-import com.dicoding.asclepius.R
 import com.dicoding.asclepius.databinding.ActivityMainBinding
 import com.dicoding.asclepius.helper.ImageClassifierHelper
-import com.dicoding.asclepius.helper.ImageFileFinder
+import com.dicoding.asclepius.utils.uriToBase64
+import com.dicoding.asclepius.view.base.BaseActivity
+import com.dicoding.asclepius.view.history.HistoryActivity
+import com.dicoding.asclepius.view.result.ResultActivity
+import com.dicoding.asclepius.view.webview.WebViewActivity
 import com.yalantis.ucrop.UCrop
+import timber.log.Timber
 import java.io.File
 
-class MainActivity : AppCompatActivity() {
-    private lateinit var binding: ActivityMainBinding
+class MainActivity : BaseActivity<ActivityMainBinding>() {
 
     private var currentImageUri: Uri? = null
+    private var currentLabel: String? = null
+    private var currentConfidenceScore: String? = null
 
-    private val requestPermissionLauncher =
-        registerForActivityResult(
-            ActivityResultContracts.RequestPermission()
-        ) { isGranted: Boolean ->
-            if (isGranted) {
-                showToast("Permission request granted")
-            } else {
-                showToast("Permission request denied")
-            }
-        }
+    override fun getViewBinding(): ActivityMainBinding {
+        return ActivityMainBinding.inflate(layoutInflater)
+    }
 
-    private fun allPermissionsGranted() =
-        ContextCompat.checkSelfPermission(
-            this,
-            REQUIRED_PERMISSION
-        ) == PackageManager.PERMISSION_GRANTED
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-
+    override fun initUI() {
         if (!allPermissionsGranted()) {
             requestPermissionLauncher.launch(REQUIRED_PERMISSION)
         }
-
-        initAction()
     }
 
-    private fun initAction(){
+    override fun initActions() {
         binding.apply {
             galleryButton.setOnClickListener {
                 startGallery()
@@ -63,8 +42,16 @@ class MainActivity : AppCompatActivity() {
             analyzeButton.setOnClickListener {
                 analyzeImage()
             }
+
+            historyButton.setOnClickListener {
+                moveToHistory()
+            }
         }
     }
+
+    override fun initProcess() {}
+
+    override fun initObservers() {}
 
     private fun startGallery() {
         launcherGallery.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
@@ -87,7 +74,7 @@ class MainActivity : AppCompatActivity() {
         if (uri != null) {
             startUCrop(uri)
         } else {
-            Log.d("Photo Picker", "No media selected")
+            Timber.tag("Photo Picker").d("No media selected")
         }
     }
 
@@ -98,25 +85,33 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun analyzeImage() {
-        if (currentImageUri == null){
+        if (currentImageUri == null) {
             showToast("Belum ada gambar")
             return
         }
 
         ImageClassifierHelper(
             context = this,
-            onSuccess = { result -> showToast(result) },
+            onSuccess = { label, confidenceScore ->
+                currentLabel = label
+                currentConfidenceScore = confidenceScore
+                moveToResult()
+            },
             onFailed = { showToast(it) }
         ).classifyStaticImage(this, currentImageUri!!)
     }
 
     private fun moveToResult() {
         val intent = Intent(this, ResultActivity::class.java)
+        intent.putExtra(ResultActivity.EXTRA_LABEL, currentLabel)
+        intent.putExtra(ResultActivity.EXTRA_CONFIDENCE_SCORE, currentConfidenceScore)
+        intent.putExtra(ResultActivity.EXTRA_IMAGE_BASE_64, currentImageUri?.uriToBase64(this))
         startActivity(intent)
     }
 
-    private fun showToast(message: String) {
-        Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
+    private fun moveToHistory() {
+        val intent = Intent(this, HistoryActivity::class.java)
+        startActivity(intent)
     }
 
     @Deprecated("Deprecated in Java")
@@ -131,9 +126,5 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
-    }
-
-    companion object {
-        private const val REQUIRED_PERMISSION = Manifest.permission.READ_EXTERNAL_STORAGE
     }
 }

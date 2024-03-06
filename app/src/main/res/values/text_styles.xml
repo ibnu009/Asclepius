@@ -18,6 +18,7 @@
     </style>
     
     <style name="AppTextStyle.Bold">
+        <item name="android:textStyle">bold</item>
     </style>
 
     <style name="AppTextStyle.Regular.Heading5">

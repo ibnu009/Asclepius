@@ -6,8 +6,8 @@ import androidx.room.PrimaryKey
 @Entity
 data class History (
     @PrimaryKey(autoGenerate = true)
-    val id: Int,
-    val label: String,
-    val confidence: String,
-    val imagePath: String,
+    var id: Int,
+    var label: String,
+    var confidence: String,
+    var imageBase64: String,
 )

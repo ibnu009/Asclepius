@@ -1,7 +1,7 @@
 package com.dicoding.asclepius
 
 import android.app.Application
-import com.dicoding.asclepius.di.feature.articleModule
+import com.dicoding.asclepius.di.feature.domainModule
 import com.dicoding.asclepius.di.feature.viewModelModule
 import com.dicoding.asclepius.di.localModule
 import com.dicoding.asclepius.di.networkModule
@@ -21,10 +21,10 @@ class BaseApp: Application() {
             androidContext(this@BaseApp)
             modules(
                 listOf(
-                    networkModule,
-                    articleModule,
+                    domainModule,
+                    viewModelModule,
                     localModule,
-                    viewModelModule
+                    networkModule,
                 )
             )
         }

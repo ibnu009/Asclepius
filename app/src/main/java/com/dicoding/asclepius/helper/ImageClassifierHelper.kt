@@ -14,6 +14,7 @@ import org.tensorflow.lite.task.core.BaseOptions
 import org.tensorflow.lite.task.core.vision.ImageProcessingOptions
 import org.tensorflow.lite.task.vision.classifier.Classifications
 import org.tensorflow.lite.task.vision.classifier.ImageClassifier
+import timber.log.Timber
 import java.text.NumberFormat
 
 
@@ -22,7 +23,7 @@ class ImageClassifierHelper(
     private var maxResults: Int = 3,
     private val modelName: String = "cancer_classification.tflite",
     private val context: Context,
-    private val onSuccess: (String) -> Unit,
+    private val onSuccess: (String, String) -> Unit,
     private val onFailed: (String) -> Unit,
 ) {
 
@@ -31,7 +32,6 @@ class ImageClassifierHelper(
     init {
         setupImageClassifier()
     }
-
 
     private fun setupImageClassifier() {
         val optionsBuilder = ImageClassifier.ImageClassifierOptions.builder()
@@ -49,7 +49,7 @@ class ImageClassifierHelper(
             )
         } catch (e: IllegalStateException) {
             onFailed("Terjadi Kesalahan")
-            Log.e("ImageClassifierHelper", e.message.toString())
+            Timber.tag("ImageClassifierHelper").e(e.message.toString())
         }
     }
 
@@ -82,10 +82,11 @@ class ImageClassifierHelper(
                         it?.score ?: 0.0f
                     }
 
-                val displayResult = "${highestResult.label} " + NumberFormat.getPercentInstance()
-                    .format(highestResult.score).trim()
+                val label = highestResult.label
+                val confidenceScore = NumberFormat.getPercentInstance()
+                    .format(highestResult.score)
 
-                onSuccess(displayResult)
+                onSuccess(label, confidenceScore)
             }
         }
     }
